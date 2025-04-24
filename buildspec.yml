@@ -1,0 +1,18 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.8
+  build:
+    commands:
+      - echo "Installing SSH client..."
+      - yum install -y openssh-clients
+      - echo "Deploying HTML to EC2..."
+      - |
+        EC2_IP=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=WebServer" "Name=instance-state-name,Values=running" --query "Reservations[0].Instances[0].PublicDnsName" --output text)
+        scp -o StrictHostKeyChecking=no -i your-key.pem ./app/devops-summative.html ec2-user@$EC2_IP:/tmp/index.html
+        ssh -o StrictHostKeyChecking=no -i your-key.pem ec2-user@$EC2_IP "sudo mv /tmp/index.html /var/www/html/index.html"
+artifacts:
+  files:
+    - app/devops-summative.html
