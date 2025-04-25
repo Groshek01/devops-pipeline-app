@@ -1,25 +1,21 @@
-
 version: 0.2
 
 phases:
+  install:
+    runtime-versions:
+      python: 3.8
   build:
     commands:
-      - echo "Checking EC2 instance state..."
-      - INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=WebServer" --query "Reservations[0].Instances[0].InstanceId" --output text)
-      - STATE=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --query "Reservations[0].Instances[0].State.Name" --output text)
-      - |
-        if [ "$STATE" != "running" ]; then
-          echo "Starting EC2 instance..."
-          aws ec2 start-instances --instance-ids $INSTANCE_ID
-          echo "Waiting for EC2 to be running..."
-          aws ec2 wait instance-running --instance-ids $INSTANCE_ID
-        else
-          echo "EC2 is already running."
-        fi
-      - echo "Fetching EC2 Public DNS..."
-      - EC2_IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --query "Reservations[0].Instances[0].PublicDnsName" --output text)
-      - echo "Ensuring Apache is running..."
-      - ssh -o StrictHostKeyChecking=no -i devops-key.pem ec2-user@$EC2_IP "sudo systemctl start httpd"
+      - echo "Installing SSH client..."
+      - yum install -y openssh-clients
+      - echo "Downloading SSH key from S3..."
+      - aws s3 cp s3://codepipelinestartertempla-codepipelineartifactsbuc-jwp57bzwzkyj/devops-key.pem .
+      - chmod 400 devops-key.pem
       - echo "Deploying HTML to EC2..."
-      - scp -o StrictHostKeyChecking=no -i devops-key.pem ./app/devops-summative.html ec2-user@$EC2_IP:/tmp/index.html
-      - ssh -o StrictHostKeyChecking=no -i devops-key.pem ec2-user@$EC2_IP "sudo mv /tmp/index.html /var/www/html/index.html"
+      - |
+        EC2_IP=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=WebServer" "Name=instance-state-name,Values=running" --query "Reservations[0].Instances[0].PublicDnsName" --output text)
+        scp -o StrictHostKeyChecking=no -i devops-key.pem ./app/devops-summative.html ec2-user@$EC2_IP:/tmp/index.html
+        ssh -o StrictHostKeyChecking=no -i devops-key.pem ec2-user@$EC2_IP "sudo mv /tmp/index.html /var/www/html/index.html"
+artifacts:
+  files:
+    - app/devops-summative.html
