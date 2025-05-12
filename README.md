@@ -25,12 +25,8 @@ This project demonstrates a simple but complete DevOps workflow using AWS servic
 2. CodeBuild runs `buildspec.yml`, deploying the HTML app to EC2
 3. CloudFormation creates/updates the environment (EC2, SG, etc.)
 
-## ✅ Benefits
+## ✅ DevOps practices
 - Single repository, single pipeline
 - Fully automated deployment
 - Uses AWS Free Tier efficiently
 - Demonstrates GitOps + Infrastructure as Code
-
-## ⚠️ Notes
-- Ensure EC2 instance is stopped when not in use to avoid charges
-- Replace placeholders in `buildspec.yml` with your actual EC2 DNS and key
